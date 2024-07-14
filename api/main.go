@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,6 +30,7 @@ type Transaksip struct {
 	Tgl_transaksi     time.Time `json:"tgl_transaksi"`
 	Status_pembayaran string    `json:"status_pembayaran"`
 	Metode_pembayaran string    `json:"metode_pembayaran"`
+
 }
 
 
@@ -43,10 +45,14 @@ type Barang struct {
 }
 
 type Pengiriman struct {
-	Kd_pengiriman uint   `json:"kd_barang"`
-	Nama_kurir    string `json:"nama_kurir"`
-	Nama_Penerima string `json:"nama"`
-	Alamat_tujuan string `json:"alamat_tujuan"`
+    ID               int    `json:"id"`
+    Kd_pengiriman    string `json:"kd_pengiriman"`
+    Nama_kurir       string `json:"nama_kurir"`
+    Kd_user          string `json:"kd_user"`
+    Alamat_tujuan    string `json:"alamat_tujuan"`
+    Kd_transaksi     string `json:"kd_transaksi"`
+    Kd_seller        string `json:"kd_seller"`
+    Status_pengiriman string `json:"status_pengiriman"`
 }
 
 type Users struct {
@@ -148,6 +154,12 @@ type TotalBarang struct {
     Total int `json:"total"`
 }
 
+func generateKodePengiriman() string {
+    rand.Seed(time.Now().UnixNano())
+    randomNum := rand.Intn(1000) // Generate random number between 0 and 999
+    return fmt.Sprintf("JNE%03d", randomNum) // Format the number to have 3 digits
+}
+
 func generateKodeBarang() string {
 	return "BRG" + strconv.FormatInt(time.Now().Unix(), 5)
 }
@@ -168,8 +180,9 @@ func openURL(url string) error {
 }
 
 
-func generateKdChat(kd_user string) string {
-	return fmt.Sprintf("%s-%d", kd_user, time.Now().Unix())
+func generateKdChat() string {
+	// Fungsi untuk menghasilkan kd_chat yang unik
+	return "CHT" + time.Now().Format("20060102150405")
 }
 
 func generateKodeUser() string {
@@ -278,33 +291,23 @@ func main() {
 	})
 
 	// PENCARIAN BARANG OLEH USER (PAI)
-	e.GET("/barang/:nama_barang", func(c echo.Context) error {
-		namaBarang := c.Param("nama_barang")
-	
-		// Lakukan query ke database untuk mencari barang berdasarkan nama_barang
-		rows, err := db.Query("SELECT id, kd_barang, nama_b, deskripsi, stok_b, harga_b, gambar_product FROM barang WHERE nama_b LIKE ?", "%"+namaBarang+"%")
-		if err != nil {
-			log.Fatalf("Error saat mengambil data dari database: %v", err)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"})
-		}
-		defer rows.Close()
-	
-		var barangs []Barang
-		for rows.Next() {
-			var barang Barang
-			err := rows.Scan(&barang.ID, &barang.Kd_barang, &barang.Nama_b, &barang.Deskripsi, &barang.Stok_b, &barang.Harga_b, &barang.Gambar_p)
-			if err != nil {
-				log.Fatalf("Error saat memindai baris data: %v", err)
-				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"})
-			}
-			barangs = append(barangs, barang)
-		}
-		if err := rows.Err(); err != nil {
-			log.Fatalf("Error saat iterasi baris data: %v", err)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"})
-		}
-		return c.JSON(http.StatusOK, barangs)
-	})
+	// PENCARIAN BARANG BERDASARKAN NAMA BARANG
+	// e.GET("/barang/:nama_b", func(c echo.Context) error {
+	// 	nama_b := c.Param("nama_b")
+		
+	// 	row := db.QueryRow("SELECT id, kd_barang, nama_b, deskripsi, stok_b, harga_b, gambar_product FROM barang WHERE nama_b = ?", nama_b)
+
+	// 	var barang Barang
+	// 	err := row.Scan(&barang.ID, &barang.Kd_barang, &barang.Nama_b, &barang.Deskripsi, &barang.Stok_b, &barang.Harga_b, &barang.Gambar_p)
+	// 	if err == sql.ErrNoRows {
+	// 		return c.JSON(http.StatusNotFound, map[string]string{"message": "Barang not found"})
+	// 	} else if err != nil {
+	// 		log.Fatalf("Error saat memindai baris data: %v", err)
+	// 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"})
+	// 	}
+
+	// 	return c.JSON(http.StatusOK, barang)
+	// })
 
 	e.GET("/total-stok", func(c echo.Context) error {
         var totalStok TotalStok
@@ -325,6 +328,53 @@ func main() {
 
         return c.JSON(http.StatusOK, totalBarang)
     })
+
+	// e.POST("/barang", func(c echo.Context) error {
+	// 	var barang Barang
+	// 	barang.Kd_barang = generateKodeBarang()
+	// 	barang.Nama_b = c.FormValue("nama_b")
+	// 	barang.Deskripsi = c.FormValue("deskripsi")
+	// 	barang.Stok_b, _ = strconv.Atoi(c.FormValue("stok_b"))
+	// 	barang.Harga_b, _ = strconv.ParseFloat(c.FormValue("harga_b"), 64)
+
+	// 	// Proses upload file gambar_product
+	// 	file, err := c.FormFile("gambar_product")
+	// 	if err != nil && err != http.ErrMissingFile {
+	// 		log.Printf("Error receiving file: %v", err)
+	// 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Bad Request"})
+	// 	}
+
+	// 	if file != nil {
+	// 		src, err := file.Open()
+	// 		if err != nil {
+	// 			log.Printf("Error opening file: %v", err)
+	// 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"})
+	// 		}
+	// 		defer src.Close()
+
+	// 		filePath := fmt.Sprintf("images/%s", file.Filename)
+	// 		dst, err := os.Create(filePath)
+	// 		if err != nil {
+	// 			log.Printf("Error creating file: %v", err)
+	// 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"})
+	// 		}
+	// 		defer dst.Close()
+	// 		if _, err = io.Copy(dst, src); err != nil {
+	// 			log.Printf("Error saving file: %v", err)
+	// 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"})
+	// 		}
+	// 		barang.Gambar_p = file.Filename
+	// 	}
+
+	// 	sqlStatement := "INSERT INTO barang (kd_barang, nama_b, deskripsi, stok_b, harga_b, gambar_product) VALUES (?, ?, ?, ?, ?, ?)"
+	// 	_, err = db.Exec(sqlStatement, barang.Kd_barang, barang.Nama_b, barang.Deskripsi, barang.Stok_b, barang.Harga_b, barang.Gambar_p)
+	// 	if err != nil {
+	// 		log.Printf("Error inserting into database: %v", err)
+	// 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"})
+	// 	}
+
+	// 	return c.JSON(http.StatusCreated, barang)
+	// })
 
 	e.POST("/barang", func(c echo.Context) error {
 		var barang Barang
@@ -373,22 +423,28 @@ func main() {
 		return c.JSON(http.StatusCreated, barang)
 	})
 	
-	// e.GET("/barang/:kd_barang", func(c echo.Context) error {
-    //     kd_barang := c.Param("kd_barang")
-    //     var barang Barang
 
-    //     query := "SELECT id, kd_barang, nama_b, deskripsi, stok_b, harga_b, gambar_product FROM barang WHERE kd_barang = ?"
-    //     err := db.QueryRow(query, kd_barang).Scan(&barang.ID, &barang.Kd_barang, &barang.Nama_b, &barang.Deskripsi, &barang.Stok_b, &barang.Harga_b, &barang.Gambar_p)
-    //     if err != nil {
-    //         if err == sql.ErrNoRows {
-    //             return c.JSON(http.StatusNotFound, map[string]string{"error": "Barang not found"})
-    //         }
-    //         return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
-    //     }
-
-    //     return c.JSON(http.StatusOK, barang)
-    // })
-
+	e.GET("/barang/:nama_b", func(c echo.Context) error {
+		nama_b, err := url.PathUnescape(c.Param("nama_b"))
+		if err != nil {
+			log.Fatalf("Error decoding URL parameter: %v", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"})
+		}
+		
+		row := db.QueryRow("SELECT id, kd_barang, nama_b, deskripsi, stok_b, harga_b, gambar_product FROM barang WHERE nama_b = ?", nama_b)
+	
+		var barang Barang
+		err = row.Scan(&barang.ID, &barang.Kd_barang, &barang.Nama_b, &barang.Deskripsi, &barang.Stok_b, &barang.Harga_b, &barang.Gambar_p)
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, map[string]string{"message": "Barang not found"})
+		} else if err != nil {
+			log.Fatalf("Error saat memindai baris data: %v", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"})
+		}
+	
+		return c.JSON(http.StatusOK, barang)
+	})
+	
 	e.GET("/barang/:kd_barang", func(c echo.Context) error {
 		kd_barang := c.Param("kd_barang")
 		
@@ -917,8 +973,6 @@ e.GET("/seller/:kd_seller", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, transaksis)
 	})
 
-	
-
 	e.GET("/transaksii_sha", func(c echo.Context) error {
 		// Query database to get all transactions without filtering status_pembayaran
 		query := `
@@ -968,61 +1022,6 @@ e.GET("/seller/:kd_seller", func(c echo.Context) error {
 		}
 
 		return c.JSON(http.StatusOK, transaksis)
-	})
-	e.GET("/transaksii", func(c echo.Context) error {
-		// Query untuk mendapatkan data transaksi dengan join ke tabel users, seller, dan barang
-		query := `
-			SELECT
-				t.kd_transaksi,
-				u.nama_users,  -- menggunakan kolom nama_users dari tabel users
-				s.nama_seller,
-				b.nama_b,
-				t.jumlah_barang,
-				t.total_harga,
-				t.tgl_transaksi,
-				t.status_pembayaran
-			FROM
-				transaksi t
-			JOIN
-				users u ON t.kd_user = u.kd_user
-			JOIN
-				seller s ON t.kd_seller = s.kd_seller
-			JOIN
-				barang b ON t.kd_barang = b.kd_barang
-		`
-		
-		rows, err := db.Query(query)
-		if err != nil {
-			log.Printf("Kesalahan saat mengambil semua transaksi dari database: %v\n", err)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Gagal mengambil semua transaksi"})
-		}
-		defer rows.Close()
-	
-		var transaksiList []TransaksiResponse
-		for rows.Next() {
-			var t TransaksiResponse
-			var tglTransaksi string
-			if err := rows.Scan(&t.KdTransaksi, &t.NamaUser, &t.NamaSeller, &t.NamaBarang, &t.JumlahBarang, &t.TotalHarga, &tglTransaksi, &t.StatusPembayaran); err != nil {
-				log.Printf("Kesalahan saat memindai transaksi dari database: %v\n", err)
-				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Gagal mengambil semua transaksi"})
-			}
-	
-			// Parse nilai tgl_transaksi ke time.Time
-			t.TglTransaksi, err = time.Parse("2006-01-02 15:04:05", tglTransaksi)
-			if err != nil {
-				log.Printf("Kesalahan parsing tgl_transaksi: %v\n", err)
-				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Gagal mengambil semua transaksi"})
-			}
-	
-			transaksiList = append(transaksiList, t)
-		}
-	
-		if err := rows.Err(); err != nil {
-			log.Printf("Kesalahan saat iterasi transaksi dari database: %v\n", err)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Gagal mengambil semua transaksi"})
-		}
-	
-		return c.JSON(http.StatusOK, transaksiList)
 	})
 	
 	e.GET("/transaksi/:kd_transaksi", func(c echo.Context) error {
@@ -1131,27 +1130,37 @@ e.GET("/seller/:kd_seller", func(c echo.Context) error {
 
 		return c.JSON(http.StatusOK, map[string]string{"message": "Status pembayaran berhasil diupdate"})
 	})
-
-	e.POST("/transaksi", func(c echo.Context) error {
-		kd_user := c.Request().Header.Get("kd_user")
+	
+	e.POST("/transaksii", func(c echo.Context) error {
+		type Transaksi struct {
+			Kd_user           string  `json:"kd_user"`
+			Kd_barang         string  `json:"kd_barang"`
+			Jumlah_barang     int     `json:"jumlah_barang"`
+			Total_harga       float64 `json:"total_harga"`
+			Metode_pembayaran string  `json:"metode_pembayaran"`
+		}
+	
+		var transaksi Transaksi
+		if err := c.Bind(&transaksi); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
+		}
+	
 		kd_seller := "S01020" // Nilai tetap
-		kd_barang := c.FormValue("kd_barang")
-		jumlah_barang := c.FormValue("jumlah_barang")
-		metode_pembayaran := c.FormValue("metode_pembayaran")
+		kd_transaksi := "TRX" + time.Now().Format("0601021504") // format dengan panjang 13 karakter (3 untuk TRX dan 10 untuk timestamp)
 		tgl_transaksi := time.Now()
 		batas_pembayaran := tgl_transaksi.Add(24 * time.Hour)
-
-		_, err := db.Exec("INSERT INTO transaksi (kd_user, kd_seller, kd_transaksi, kd_barang, jumlah_barang, tgl_transaksi, status_pembayaran, metode_pembayaran, batas_pembayaran) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-			kd_user, kd_seller, "TRX"+time.Now().Format("20060102150405"), kd_barang, jumlah_barang, tgl_transaksi, "Pending", metode_pembayaran, batas_pembayaran)
-
+		status_pembayaran := "Pending" // Nilai tetap
+	
+		query := "INSERT INTO transaksi (kd_user, kd_seller, kd_transaksi, kd_barang, jumlah_barang, total_harga, tgl_transaksi, status_pembayaran, metode_pembayaran, batas_pembayaran) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+		_, err := db.Exec(query, transaksi.Kd_user, kd_seller, kd_transaksi, transaksi.Kd_barang, transaksi.Jumlah_barang, transaksi.Total_harga, tgl_transaksi, status_pembayaran, transaksi.Metode_pembayaran, batas_pembayaran)
 		if err != nil {
 			log.Printf("Error inserting into database: %v\n", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create transaction"})
 		}
-
+	
 		return c.JSON(http.StatusCreated, map[string]string{"message": "Transaction created successfully"})
 	})
-
+	
 
 	// Endpoint untuk menghapus transaksi berdasarkan ID
 	e.DELETE("/transaksi/:id", func(c echo.Context) error {
@@ -1187,26 +1196,40 @@ e.GET("/seller/:kd_seller", func(c echo.Context) error {
 
 	e.GET("/troli/:kd_user", func(c echo.Context) error {
 		kd_user := c.Param("kd_user")
-
-		rows, err := db.Query("SELECT id, kd_user, kd_seller, kd_barang, gambar_p, harga_b, jumlah_barang FROM troli WHERE kd_user = ?", kd_user)
+	
+		// Query SQL dengan join untuk mengambil data troli beserta nama_seller dan nama_b
+		query := `
+			SELECT t.id, t.kd_user, t.kd_seller, s.nama_seller, t.kd_barang, b.nama_b, t.gambar_p, t.harga_b, t.jumlah_barang
+			FROM troli t
+			LEFT JOIN seller s ON t.kd_seller = s.kd_seller
+			LEFT JOIN barang b ON t.kd_barang = b.kd_barang
+			WHERE t.kd_user = ?
+		`
+	
+		// Eksekusi query dengan parameter kd_user
+		rows, err := db.Query(query, kd_user)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
-
+	
 		var trolis []Troli
 		for rows.Next() {
 			var troli Troli
-			if err := rows.Scan(&troli.ID, &troli.Kd_user, &troli.Kd_seller, &troli.Kd_barang, &troli.Gambar_p, &troli.Harga_b, &troli.Jumlah_barang); err != nil {
+			// Scan data dari baris hasil query ke struct Troli
+			if err := rows.Scan(&troli.ID, &troli.Kd_user, &troli.Kd_seller, &troli.Nama_seller, &troli.Kd_barang, &troli.Nama_b, &troli.Gambar_p, &troli.Harga_b, &troli.Jumlah_barang); err != nil {
 				return err
 			}
+			// Tambahkan troli ke slice trolis
 			trolis = append(trolis, troli)
 		}
-
+	
+		// Handle error jika ada
 		if err := rows.Err(); err != nil {
 			return err
 		}
-
+	
+		// Mengembalikan data trolis sebagai respons JSON
 		return c.JSON(http.StatusOK, trolis)
 	})
 
@@ -1358,7 +1381,133 @@ e.GET("/seller/:kd_seller", func(c echo.Context) error {
 			"message": "Data troli berhasil dihapus",
 		})
 	}))
+
+	e.GET("/pengiriman", func(c echo.Context) error {
+		rows, err := db.Query("SELECT id, kd_pengiriman, nama_kurir, kd_user, alamat_tujuan, kd_transaksi, kd_seller FROM pengiriman")
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": err.Error(),
+			})
+		}
+		defer rows.Close()
 	
+		var pengirimans []Pengiriman
+		for rows.Next() {
+			var pengiriman Pengiriman
+			if err := rows.Scan(&pengiriman.ID, &pengiriman.Kd_pengiriman, &pengiriman.Nama_kurir, &pengiriman.Kd_user, &pengiriman.Alamat_tujuan, &pengiriman.Kd_transaksi, &pengiriman.Kd_seller); err != nil {
+				return c.JSON(http.StatusInternalServerError, map[string]string{
+					"error": err.Error(),
+				})
+			}
+			pengirimans = append(pengirimans, pengiriman)
+		}
+	
+		return c.JSON(http.StatusOK, pengirimans)
+	})	
+
+	e.GET("/pengiriman/:kd_user", func(c echo.Context) error {
+		kd_user := c.Param("kd_user")
+		rows, err := db.Query("SELECT id, kd_pengiriman, nama_kurir, kd_user, alamat_tujuan, kd_transaksi, kd_seller, status_pengiriman FROM pengiriman WHERE kd_user = ?", kd_user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": err.Error(),
+			})
+		}
+		defer rows.Close()
+	
+		var pengirimans []Pengiriman
+		for rows.Next() {
+			var pengiriman Pengiriman
+			if err := rows.Scan(&pengiriman.ID, &pengiriman.Kd_pengiriman, &pengiriman.Nama_kurir, &pengiriman.Kd_user, &pengiriman.Alamat_tujuan, &pengiriman.Kd_transaksi, &pengiriman.Kd_seller, &pengiriman.Status_pengiriman); err != nil {
+				return c.JSON(http.StatusInternalServerError, map[string]string{
+					"error": err.Error(),
+				})
+			}
+			pengirimans = append(pengirimans, pengiriman)
+		}
+	
+		return c.JSON(http.StatusOK, pengirimans)
+	})
+
+	e.PUT("/pengiriman/:kd_user", func(c echo.Context) error {
+		kd_user := c.Param("kd_user")
+		
+		// Mendapatkan data yang ingin diupdate dari body request
+		var pengirimanUpdate Pengiriman
+		if err := c.Bind(&pengirimanUpdate); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "Failed to bind JSON data",
+			})
+		}
+	
+		// Query update ke database
+		stmt, err := db.Prepare("UPDATE pengiriman SET nama_kurir = ?, alamat_tujuan = ?, kd_transaksi = ?, kd_seller = ?, status_pengiriman = ? WHERE kd_user = ?")
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": err.Error(),
+			})
+		}
+		defer stmt.Close()
+	
+		// Eksekusi query dengan parameter dari pengirimanUpdate dan kd_user
+		_, err = stmt.Exec(pengirimanUpdate.Nama_kurir, pengirimanUpdate.Alamat_tujuan, pengirimanUpdate.Kd_transaksi, pengirimanUpdate.Kd_seller, pengirimanUpdate.Status_pengiriman, kd_user)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": err.Error(),
+			})
+		}
+	
+		return c.JSON(http.StatusOK, map[string]string{
+			"message": "Update successful",
+		})
+	})
+	
+	
+	e.POST("/pengiriman", func(c echo.Context) error {
+		var pengiriman Pengiriman
+		if err := c.Bind(&pengiriman); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": err.Error(),
+			})
+		}
+	
+		pengiriman.Kd_pengiriman = generateKodePengiriman()
+	
+		if pengiriman.Status_pengiriman == "" {
+			pengiriman.Status_pengiriman = "Proses"
+		}
+	
+		_, err := db.Exec("INSERT INTO pengiriman (kd_pengiriman, nama_kurir, kd_user, alamat_tujuan, kd_transaksi, kd_seller, status_pengiriman) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			pengiriman.Kd_pengiriman, pengiriman.Nama_kurir, pengiriman.Kd_user, pengiriman.Alamat_tujuan, pengiriman.Kd_transaksi, pengiriman.Kd_seller, pengiriman.Status_pengiriman,
+		)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": err.Error(),
+			})
+		}
+		return c.JSON(http.StatusCreated, pengiriman)
+	})
+
+    e.PUT("/pengiriman/:kd_pengiriman", func(c echo.Context) error {
+        kd_pengiriman := c.Param("kd_pengiriman")
+        var pengiriman Pengiriman
+        if err := c.Bind(&pengiriman); err != nil {
+            return c.JSON(http.StatusBadRequest, map[string]string{
+                "error": err.Error(),
+            })
+        }
+
+        _, err := db.Exec("UPDATE pengiriman SET nama_kurir = ?, kd_user = ?, alamat_tujuan = ?, kd_transaksi = ?, kd_seller = ?, status_pengiriman = ? WHERE kd_pengiriman = ?",
+            pengiriman.Nama_kurir, pengiriman.Kd_user, pengiriman.Alamat_tujuan, pengiriman.Kd_transaksi, pengiriman.Kd_seller, pengiriman.Status_pengiriman, kd_pengiriman,
+        )
+        if err != nil {
+            return c.JSON(http.StatusInternalServerError, map[string]string{
+                "error": err.Error(),
+            })
+        }
+        return c.JSON(http.StatusOK, pengiriman)
+    })
+
 
 	e.GET("/getchat", func(c echo.Context) error {
 		rows, err := db.Query("SELECT id, kd_user, tanggal, jam, text_chat FROM chat")
@@ -1392,43 +1541,53 @@ e.GET("/seller/:kd_seller", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, chats)
 	})
 
-	e.POST("/getchat", func(c echo.Context) error {
+	e.POST("/chat", func(c echo.Context) error {
 		chat := new(Chat)
 		if err := c.Bind(chat); err != nil {
-			log.Println("Bind error: ", err)
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+			return err
 		}
 
-		// Set Tanggal dan Jam saat ini
+		// Mengisi kolom yang diperlukan
+		chat.Kd_seller = "S01020"
+		chat.KdChat = generateKdChat()
 		chat.Tanggal = time.Now().Format("2006-01-02")
 		chat.Jam = time.Now().Format("15:04:05")
 
-		// Tentukan kd_seller
-		kd_seller := "S01020"
-
-		// Generate kd_chat
-		chat.KdChat = generateKdChat(chat.KDUser)
-
-		// Insert data ke database
+		// Menyimpan data ke dalam database
 		query := "INSERT INTO chat (kd_user, kd_seller, kd_chat, tanggal, jam, text_chat) VALUES (?, ?, ?, ?, ?, ?)"
-		result, err := db.Exec(query, chat.KDUser, kd_seller, chat.KdChat, chat.Tanggal, chat.Jam, chat.TextChat)
+		_, err := db.Exec(query, chat.KDUser, chat.Kd_seller, chat.KdChat, chat.Tanggal, chat.Jam, chat.TextChat)
 		if err != nil {
-			log.Println("Database insert error: ", err)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to insert data"})
+			return err
 		}
 
-		id, err := result.LastInsertId()
-		if err != nil {
-			log.Println("LastInsertId error: ", err)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to retrieve last insert ID"})
-		}
-		chat.ID = int(id)
+		// Mengembalikan respon sukses
+		return c.JSON(http.StatusCreated, chat)
+	})
 
-		return c.JSON(http.StatusOK, chat)
+	e.POST("/chatt", func(c echo.Context) error {
+		chat := new(Chat)
+		if err := c.Bind(chat); err != nil {
+			return err
+		}
+
+		// Mengisi kolom yang diperlukan
+		chat.KDUser = "0"
+		chat.Kd_seller = "S01020"
+		chat.KdChat = generateKdChat()
+		chat.Tanggal = time.Now().Format("2006-01-02")
+		chat.Jam = time.Now().Format("15:04:05")
+
+		// Menyimpan data ke dalam database
+		query := "INSERT INTO chat (kd_user, kd_seller, kd_chat, tanggal, jam, text_chat) VALUES (?, ?, ?, ?, ?, ?)"
+		_, err := db.Exec(query, chat.KDUser, chat.Kd_seller, chat.KdChat, chat.Tanggal, chat.Jam, chat.TextChat)
+		if err != nil {
+			return err
+		}
+
+		// Mengembalikan respon sukses
+		return c.JSON(http.StatusCreated, chat)
 	})
 	
-
-
 	e.Logger.Fatal(e.Start(":1323"))
 }
 
