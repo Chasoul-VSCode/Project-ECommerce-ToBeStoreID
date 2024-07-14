@@ -784,84 +784,114 @@
                 }
             </style>
             
-            <div class="col-md-8 grid-margin stretch-card">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex flex-row justify-content-between">
-                            <h4 class="card-title mb-1">Your Order Customers</h4>
-                            <p class="text-muted mb-1">Your data status</p>
-                        </div>
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="preview-list">
-                                    <div class="preview-item border-bottom">
-                                        <div class="table-responsive" style="max-height: 240px; overflow: auto;">
-                                            <table class="table">
-                                                <thead>
-                                                    <tr>
-                                                      
-                                                      <th>Status</th>
-                                                        <th>ID Transaction</th>
-                                                        <th>Buyers</th>
-                                                        <th>Seller</th>
-                                                        <th>Product Name</th>
-                                                        <th>Quantity</th>
-                                                        <th>Total Price</th>
-                                                        <th>Method</th>
-                                                        <th>Transaction Date</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @if(isset($transaksis) && count($transaksis) > 0)
-                                                        @foreach($transaksis as $transaksi)
-                                                            <tr>
-                                                               <td class="status-cell">{{ $transaksi['status_pembayaran'] }}</td>
-                                                                <td>{{ $transaksi['kd_transaksi'] }}</td>
-                                                                <td>{{ $transaksi['nama_users'] }}</td>
-                                                                <td>{{ $transaksi['nama_seller'] }}</td>
-                                                                <td>{{ $transaksi['nama_barang'] }}</td>
-                                                                <td>{{ $transaksi['jumlah_barang'] }}</td>
-                                                                <td>IDR {{ number_format($transaksi['total_harga'], 0, ',', '.') }}</td>
-                                                                <td>{{ $transaksi['metode_pembayaran'] }}</td>
-                                                                <td>{{ $transaksi['tgl_transaksi'] }}</td>
-                                                            </tr>
-                                                        @endforeach
-                                                    @else
-                                                        <tr>
-                                                            <td colspan="8">belum ada transaksi yang dilakukan</td>
-                                                        </tr>
-                                                    @endif
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <script>
-              document.addEventListener('DOMContentLoaded', function() {
-                  const statusCells = document.querySelectorAll('.status-cell');
+            {{-- table transaksi --}}
+            
+            <div class="col-md-8 grid-margin stretch-card">
+              <div class="card">
+                  <div class="card-body">
+                      <div class="d-flex flex-row justify-content-between align-items-center mb-3">
+                          <h4 class="card-title mb-0">Your Order Customers</h4>
+                          <button id="filterPendingButton" class="btn btn-primary">Filter Pending</button>
+                      </div>
+                      <div class="table-responsive" style="max-height: 240px; overflow: auto;">
+                          <table class="table">
+                              <thead>
+                                  <tr>
+                                      <th>Status</th>
+                                      <th>ID Transaction</th>
+                                      <th>Buyers</th>
+                                      <th>Product Name</th>
+                                      <th>Quantity</th>
+                                      <th>Total Price</th>
+                                      <th>Method</th>
+                                      <th>Transaction Date</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  @if(isset($transaksis) && count($transaksis) > 0)
+                                      @foreach($transaksis as $transaksi)
+                                          <tr>
+                                              <td class="status-cell">{{ $transaksi['status_pembayaran'] }}</td>
+                                              <td>{{ $transaksi['kd_transaksi'] }}</td>
+                                              <td>{{ $transaksi['nama_users'] }}</td>
+                                              <td>{{ $transaksi['nama_barang'] }}</td>
+                                              <td>{{ $transaksi['jumlah_barang'] }}</td>
+                                              <td>IDR {{ number_format($transaksi['total_harga'], 0, ',', '.') }}</td>
+                                              <td>{{ $transaksi['metode_pembayaran'] }}</td>
+                                              <td>{{ $transaksi['tgl_transaksi'] }}</td>
+                                          </tr>
+                                      @endforeach
+                                  @else
+                                      <tr>
+                                          <td colspan="9">Belum ada transaksi yang dilakukan</td>
+                                      </tr>
+                                  @endif
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
+              </div>
+          </div>
           
-                  statusCells.forEach(cell => {
-                      const status = cell.textContent.trim();
-                      let icon = '';
+          <style>
+              .card-title {
+                  margin-bottom: 0;
+              }
           
-                      if (status === 'Sukses') {
-                          icon = '<span class="status-icon success">✔️</span> Sukses';
-                      } else if (status === 'Pending') {
-                          icon = '<span class="status-icon pending">⌛</span> Pending';
-                      } else if (status === 'Cancel') {
-                          icon = '<span class="status-icon cancel">❌</span> Cancel';
-                      }
+              .btn-primary {
+                  margin-left: 10px; /* Sesuaikan margin dengan kebutuhan */
+              }
+          </style>
           
-                      cell.innerHTML = icon;
-                  });
-              });
-          </script>
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const statusCells = document.querySelectorAll('.status-cell');
+                const tableRows = document.querySelectorAll('tbody tr');
+                const filterPendingButton = document.getElementById('filterPendingButton');
+        
+                statusCells.forEach(cell => {
+                    const status = cell.textContent.trim();
+                    let icon = '';
+        
+                    if (status === 'Sukses') {
+                        icon = '<span class="status-icon success">✔️</span> Sukses';
+                    } else if (status === 'Pending') {
+                        icon = '<span class="status-icon pending">⌛</span> Pending';
+                    } else if (status === 'Cancel') {
+                        icon = '<span class="status-icon cancel">❌</span> Cancel';
+                    }
+        
+                    cell.innerHTML = icon;
+                    cell.closest('tr').classList.add('status-' + status.toLowerCase()); // Tambahkan class untuk memfilter
+                });
+        
+                // Tambahkan event listener untuk tombol filter
+                filterPendingButton.addEventListener('click', function() {
+                    tableRows.forEach(row => {
+                        const statusCell = row.querySelector('.status-cell');
+                        if (filterPendingButton.textContent === 'Filter Pending') {
+                            if (!row.classList.contains('status-pending')) {
+                                row.style.display = 'none'; // Sembunyikan baris bukan Pending
+                            } else {
+                                row.style.display = ''; // Tampilkan baris Pending
+                            }
+                        } else {
+                            row.style.display = ''; // Tampilkan semua baris jika tombol diklik kembali
+                        }
+                    });
+        
+                    // Ubah teks tombol sesuai dengan kondisi saat ini
+                    if (filterPendingButton.textContent === 'Filter Pending') {
+                        filterPendingButton.textContent = 'Show All';
+                    } else {
+                        filterPendingButton.textContent = 'Filter Pending';
+                    }
+                });
+            });
+        </script>
+        
+          
 
 <style>
   .status-icon {

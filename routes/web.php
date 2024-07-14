@@ -78,6 +78,8 @@ Route::get('/admin/dashboard', function () {
     return view('admin.dashboard');
 })->name('admin.dashboard');
 
+// pengiriman
+
 // addproduct
 Route::post('/addproduct', [BarangController::class, 'store'])->name('barang.store');
 Route::get('/addproduct', [BarangController::class, 'index'])->name('admin.addproduct');
