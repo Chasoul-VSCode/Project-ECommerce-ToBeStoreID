@@ -30,7 +30,7 @@ type Transaksip struct {
 	Tgl_transaksi     time.Time `json:"tgl_transaksi"`
 	Status_pembayaran string    `json:"status_pembayaran"`
 	Metode_pembayaran string    `json:"metode_pembayaran"`
-
+	Batas_pembayaran  string    `json:"batas_pembayaran"`
 }
 
 
@@ -851,6 +851,243 @@ e.GET("/seller/:kd_seller", func(c echo.Context) error {
 	})
 	// Transaksi
 
+	e.GET("/pengiriman_arya_dua", func(c echo.Context) error {
+		// Query to get pengiriman with status 'Proses'
+		query := `
+			SELECT
+				p.kd_pengiriman,
+				p.nama_kurir,
+				p.kd_user,
+				p.alamat_tujuan,
+				p.kd_transaksi,
+				p.kd_seller,
+				p.status_pengiriman
+			FROM
+				pengiriman p
+			WHERE
+				p.status_pengiriman = 'Proses'
+		`
+
+		rows, err := db.Query(query)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		var pengirimen []Pengiriman
+		for rows.Next() {
+			var pengiriman Pengiriman
+
+			err := rows.Scan(&pengiriman.Kd_pengiriman, &pengiriman.Nama_kurir, &pengiriman.Kd_user, &pengiriman.Alamat_tujuan, &pengiriman.Kd_transaksi, &pengiriman.Kd_seller, &pengiriman.Status_pengiriman)
+			if err != nil {
+				return err
+			}
+
+			// Append each pengiriman to the slice
+			pengirimen = append(pengirimen, pengiriman)
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, pengirimen)
+	})
+
+	e.GET("/pengiriman_by_id", func(c echo.Context) error {
+		// Get the transaction code from the query parameters
+		kdPengiriman := c.QueryParam("kd_pengiriman")
+
+		if kdPengiriman == "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "kd_pengiriman is required"})
+		}
+
+		// Query to get the specific delivery by kd_pengiriman and status_pengiriman is 'Perjalanan'
+		query := `
+			SELECT
+				p.kd_pengiriman,
+				p.nama_kurir,
+				p.kd_user,
+				p.alamat_tujuan,
+				p.kd_transaksi,
+				p.kd_seller,
+				p.status_pengiriman
+			FROM
+				pengiriman p
+			WHERE
+				p.kd_pengiriman = ? AND p.status_pengiriman = 'Proses'
+		`
+
+		var pengiriman Pengiriman
+
+		err = db.QueryRow(query, kdPengiriman).Scan(&pengiriman.Kd_pengiriman, &pengiriman.Nama_kurir, &pengiriman.Kd_user, &pengiriman.Alamat_tujuan, &pengiriman.Kd_transaksi, &pengiriman.Kd_seller, &pengiriman.Status_pengiriman)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return c.JSON(http.StatusNotFound, map[string]string{"error": "Delivery not found"})
+			}
+			return err
+		}
+
+		return c.JSON(http.StatusOK, pengiriman)
+	})
+
+	e.PUT("/pengiriman_arya_dua/:kd_pengiriman", func(c echo.Context) error {
+		// Get the kd_pengiriman from the URL parameter
+		kdPengiriman := c.Param("kd_pengiriman")
+
+		// Query to update status_pengiriman to 'Perjalanan'
+		query := `
+			UPDATE
+				pengiriman
+			SET
+				status_pengiriman = 'Perjalanan'
+			WHERE
+				kd_pengiriman = ?
+		`
+
+		// Execute the query
+		_, err := db.Exec(query, kdPengiriman)
+		if err != nil {
+			return err
+		}
+
+		// Return a success response
+		return c.JSON(http.StatusOK, map[string]string{"message": "Status pengiriman updated to Perjalanan"})
+	})
+
+	e.GET("/transaksi_arya_dua", func(c echo.Context) error {
+		// Query database to get transactions with join
+		query := `
+			SELECT
+				t.kd_transaksi,
+				u.nama_users,
+				s.nama_seller,
+				b.nama_b,
+				t.jumlah_barang,
+				t.total_harga,
+				t.tgl_transaksi,
+				t.status_pembayaran,
+				t.metode_pembayaran
+			FROM
+				transaksi t
+			JOIN
+				users u ON t.kd_user = u.kd_user
+			JOIN
+				seller s ON t.kd_seller = s.kd_seller
+			JOIN
+				barang b ON t.kd_barang = b.kd_barang
+			WHERE
+				t.status_pembayaran = 'Pending'
+		`
+		rows, err := db.Query(query)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		var transaksis []Transaksip
+		for rows.Next() {
+			var transaksi Transaksip
+			var tglTransaksi string // Variabel sementara untuk tgl_transaksi
+
+			err := rows.Scan(&transaksi.Kd_transaksi, &transaksi.Nama_users, &transaksi.Nama_seller, &transaksi.Nama_barang, &transaksi.Jumlah_barang, &transaksi.Total_harga, &tglTransaksi, &transaksi.Status_pembayaran, &transaksi.Metode_pembayaran)
+			if err != nil {
+				return err
+			}
+
+			// Konversi tgl_transaksi ke time.Time setelah pemindaian
+			transaksi.Tgl_transaksi, _ = time.Parse("2006-01-02 15:04:05", tglTransaksi)
+
+			// Append each transaction to the slice
+			transaksis = append(transaksis, transaksi)
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, transaksis)
+	})
+
+	// Endpoint PUT untuk mengubah status pembayaran transaksi berdasarkan kd_transaksi
+	e.PUT("/update_transaksi_arya/:kd_transaksi", func(c echo.Context) error {
+		kdTransaksi := c.Param("kd_transaksi")
+
+		// Update status pembayaran menjadi 'Sukses' di database
+		updateQuery := `
+			UPDATE transaksi
+			SET status_pembayaran = 'Sukses'
+			WHERE kd_transaksi = ?
+		`
+
+		result, err := db.Exec(updateQuery, kdTransaksi)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Error updating transaction: %s", err))
+		}
+
+		// Periksa jumlah baris yang terpengaruh
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Error checking rows affected: %s", err))
+		}
+
+		// Jika tidak ada transaksi yang ditemukan, kembalikan error Not Found
+		if rowsAffected == 0 {
+			return echo.NewHTTPError(http.StatusNotFound, "Transaksi not found")
+		}
+
+		// Jika berhasil, kembalikan respons JSON
+		return c.JSON(http.StatusOK, map[string]string{"message": "Transaksi updated successfully"})
+	})
+
+	e.GET("/transaksi_by_id", func(c echo.Context) error {
+		// Get the transaction code from the query parameters
+		kdTransaksi := c.QueryParam("kd_transaksi")
+
+		if kdTransaksi == "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "kd_transaksi is required"})
+		}
+
+		// Query to get the specific transaction by kd_transaksi and status_pembayaran is 'Pending'
+		query := `
+			SELECT
+				t.kd_transaksi,
+				u.nama_users,
+				s.nama_seller,
+				b.nama_b,
+				t.jumlah_barang,
+				t.total_harga,
+				t.tgl_transaksi,
+				t.status_pembayaran,
+				t.metode_pembayaran,
+				t.batas_pembayaran
+			FROM
+				transaksi t
+			JOIN
+				users u ON t.kd_user = u.kd_user
+			JOIN
+				seller s ON t.kd_seller = s.kd_seller
+			JOIN
+				barang b ON t.kd_barang = b.kd_barang
+			WHERE
+				t.kd_transaksi = ? AND t.status_pembayaran = 'Pending'
+		`
+
+		var transaksi Transaksip
+		var tglTransaksi string // Temporary variable for tgl_transaksi
+
+		err := db.QueryRow(query, kdTransaksi).Scan(&transaksi.Kd_transaksi, &transaksi.Nama_users, &transaksi.Nama_seller, &transaksi.Nama_barang, &transaksi.Jumlah_barang, &transaksi.Total_harga, &tglTransaksi, &transaksi.Status_pembayaran, &transaksi.Metode_pembayaran, &transaksi.Batas_pembayaran)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return c.JSON(http.StatusNotFound, map[string]string{"error": "Transaction not found"})
+			}
+			return err
+		}
+
+		// Convert tgl_transaksi to time.Time
+		transaksi.Tgl_transaksi, _ = time.Parse("2006-01-02 15:04:05", tglTransaksi)
+
+		return c.JSON(http.StatusOK, transaksi)
+	})
+
 	// Endpoint untuk mendapatkan semua transaksi
 	e.GET("/transaksi", func(c echo.Context) error {
 		// Query untuk mendapatkan semua data transaksi
@@ -1187,35 +1424,36 @@ e.GET("/seller/:kd_seller", func(c echo.Context) error {
 		return c.JSON(http.StatusCreated, map[string]string{"message": "Transaction created successfully"})
 	})
 	
-	e.POST("/transaksii", func(c echo.Context) error {
-		type Transaksi struct {
-			Kd_user           string  `json:"kd_user"`
-			Kd_barang         string  `json:"kd_barang"`
-			Jumlah_barang     int     `json:"jumlah_barang"`
-			Total_harga       float64 `json:"total_harga"`
-			Metode_pembayaran string  `json:"metode_pembayaran"`
-		}
+	// e.POST("/transaksii", func(c echo.Context) error {
+	// 	type Transaksi struct {
+	// 		Kd_user           string  `json:"kd_user"`
+	// 		Kd_barang         string  `json:"kd_barang"`
+	// 		Jumlah_barang     int     `json:"jumlah_barang"`
+	// 		Total_harga       float64 `json:"total_harga"`
+	// 		Metode_pembayaran string  `json:"metode_pembayaran"`
+	// 	}
 	
-		var transaksi Transaksi
-		if err := c.Bind(&transaksi); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
-		}
+	// 	var transaksi Transaksi
+	// 	if err := c.Bind(&transaksi); err != nil {
+	// 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
+	// 	}
 	
-		kd_seller := "S01020" // Nilai tetap
-		kd_transaksi := "TRX" + time.Now().Format("0601021504") // format dengan panjang 13 karakter (3 untuk TRX dan 10 untuk timestamp)
-		tgl_transaksi := time.Now()
-		batas_pembayaran := tgl_transaksi.Add(24 * time.Hour)
-		status_pembayaran := "Pending" // Nilai tetap
+	// 	kd_seller := "S01020" // Nilai tetap
+	// 	kd_transaksi := "TRX" + time.Now().Format("0601021504") // format dengan panjang 13 karakter (3 untuk TRX dan 10 untuk timestamp)
+	// 	tgl_transaksi := time.Now()
+	// 	batas_pembayaran := tgl_transaksi.Add(24 * time.Hour)
+	// 	status_pembayaran := "Pending" // Nilai tetap
 	
-		query := "INSERT INTO transaksi (kd_user, kd_seller, kd_transaksi, kd_barang, jumlah_barang, total_harga, tgl_transaksi, status_pembayaran, metode_pembayaran, batas_pembayaran) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-		_, err := db.Exec(query, transaksi.Kd_user, kd_seller, kd_transaksi, transaksi.Kd_barang, transaksi.Jumlah_barang, transaksi.Total_harga, tgl_transaksi, status_pembayaran, transaksi.Metode_pembayaran, batas_pembayaran)
-		if err != nil {
-			log.Printf("Error inserting into database: %v\n", err)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create transaction"})
-		}
+	// 	query := "INSERT INTO transaksi (kd_user, kd_seller, kd_transaksi, kd_barang, jumlah_barang, total_harga, tgl_transaksi, status_pembayaran, metode_pembayaran, batas_pembayaran) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	// 	_, err := db.Exec(query, transaksi.Kd_user, kd_seller, kd_transaksi, transaksi.Kd_barang, transaksi.Jumlah_barang, transaksi.Total_harga, tgl_transaksi, status_pembayaran, transaksi.Metode_pembayaran, batas_pembayaran)
+	// 	if err != nil {
+	// 		log.Printf("Error inserting into database: %v\n", err)
+	// 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create transaction"})
+	// 	}
 	
-		return c.JSON(http.StatusCreated, map[string]string{"message": "Transaction created successfully"})
-	})
+	// 	return c.JSON(http.StatusCreated, map[string]string{"message": "Transaction created successfully"})
+	// })
+	
 	
 
 	// Endpoint untuk menghapus transaksi berdasarkan ID
@@ -1809,6 +2047,53 @@ e.GET("/pengirimann_arya_perjalanan", func(c echo.Context) error {
 		// Mengembalikan respon sukses
 		return c.JSON(http.StatusCreated, chat)
 	})
+
+	// Endpoint POST untuk membuat transaksi
+e.POST("/transaksii_new", func(c echo.Context) error {
+    type Transaksi struct {
+        Kd_user           string  `json:"kd_user"`
+        Kd_barang         string  `json:"kd_barang"`
+        Jumlah_barang     int     `json:"jumlah_barang"`
+        Total_harga       float64 `json:"total_harga"`
+        Metode_pembayaran string  `json:"metode_pembayaran"`
+    }
+
+    var transaksi Transaksi
+    if err := c.Bind(&transaksi); err != nil {
+        return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
+    }
+
+    kd_seller := "S01020" // Nilai tetap
+    kd_transaksi := "TRX" + time.Now().Format("0601021504") // format dengan panjang 13 karakter (3 untuk TRX dan 10 untuk timestamp)
+    tgl_transaksi := time.Now()
+    batas_pembayaran := tgl_transaksi.Add(24 * time.Hour)
+    status_pembayaran := "Pending" // Nilai tetap
+
+    queryInsert := "INSERT INTO transaksi (kd_user, kd_seller, kd_transaksi, kd_barang, jumlah_barang, total_harga, tgl_transaksi, status_pembayaran, metode_pembayaran, batas_pembayaran) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    _, err := db.Exec(queryInsert, transaksi.Kd_user, kd_seller, kd_transaksi, transaksi.Kd_barang, transaksi.Jumlah_barang, transaksi.Total_harga, tgl_transaksi, status_pembayaran, transaksi.Metode_pembayaran, batas_pembayaran)
+    if err != nil {
+        log.Printf("Error inserting into database: %v\n", err)
+        return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create transaction"})
+    }
+
+    // Query untuk mendapatkan transaksi yang baru saja dibuat
+    querySelect := "SELECT * FROM transaksi WHERE kd_transaksi = ?"
+    var hasilTransaksi Transaksi
+    err = db.QueryRow(querySelect, kd_transaksi).Scan(
+        &hasilTransaksi.Kd_user,
+        &hasilTransaksi.Kd_barang,
+        &hasilTransaksi.Jumlah_barang,
+        &hasilTransaksi.Total_harga,
+        &hasilTransaksi.Metode_pembayaran,
+    )
+    if err != nil {
+        log.Printf("Error fetching transaction from database: %v\n", err)
+        return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch transaction"})
+    }
+
+    return c.JSON(http.StatusCreated, hasilTransaksi)
+})
+
 	
 	e.Logger.Fatal(e.Start(":1323"))
 }

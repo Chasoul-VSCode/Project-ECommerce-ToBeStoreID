@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 15, 2024 at 08:22 AM
--- Server version: 11.3.2-MariaDB-log
--- PHP Version: 8.2.19
+-- Generation Time: Jul 15, 2024 at 11:34 AM
+-- Server version: 8.0.30
+-- PHP Version: 8.3.7
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -28,14 +28,14 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `barang` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `kd_barang` varchar(50) DEFAULT NULL,
   `nama_b` varchar(100) NOT NULL,
   `deskripsi` text NOT NULL,
-  `stok_b` int(11) DEFAULT NULL,
+  `stok_b` int DEFAULT NULL,
   `harga_b` decimal(10,2) NOT NULL,
   `gambar_product` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `barang`
@@ -58,9 +58,9 @@ INSERT INTO `barang` (`id`, `kd_barang`, `nama_b`, `deskripsi`, `stok_b`, `harga
 --
 
 CREATE TABLE `cache` (
-  `key` varchar(255) NOT NULL,
-  `value` mediumtext NOT NULL,
-  `expiration` int(11) NOT NULL
+  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expiration` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -70,9 +70,9 @@ CREATE TABLE `cache` (
 --
 
 CREATE TABLE `cache_locks` (
-  `key` varchar(255) NOT NULL,
-  `owner` varchar(255) NOT NULL,
-  `expiration` int(11) NOT NULL
+  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `owner` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expiration` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -82,14 +82,14 @@ CREATE TABLE `cache_locks` (
 --
 
 CREATE TABLE `chat` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `kd_user` varchar(50) NOT NULL,
   `kd_seller` varchar(20) NOT NULL,
   `kd_chat` varchar(20) NOT NULL,
   `tanggal` date NOT NULL,
   `jam` time NOT NULL,
   `text_chat` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `chat`
@@ -108,13 +108,13 @@ INSERT INTO `chat` (`id`, `kd_user`, `kd_seller`, `kd_chat`, `tanggal`, `jam`, `
 --
 
 CREATE TABLE `failed_jobs` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `uuid` varchar(255) NOT NULL,
-  `connection` text NOT NULL,
-  `queue` text NOT NULL,
-  `payload` longtext NOT NULL,
-  `exception` longtext NOT NULL,
-  `failed_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `id` bigint UNSIGNED NOT NULL,
+  `uuid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `connection` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `queue` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `exception` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -124,13 +124,13 @@ CREATE TABLE `failed_jobs` (
 --
 
 CREATE TABLE `jobs` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `queue` varchar(255) NOT NULL,
-  `payload` longtext NOT NULL,
-  `attempts` tinyint(3) UNSIGNED NOT NULL,
-  `reserved_at` int(10) UNSIGNED DEFAULT NULL,
-  `available_at` int(10) UNSIGNED NOT NULL,
-  `created_at` int(10) UNSIGNED NOT NULL
+  `id` bigint UNSIGNED NOT NULL,
+  `queue` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attempts` tinyint UNSIGNED NOT NULL,
+  `reserved_at` int UNSIGNED DEFAULT NULL,
+  `available_at` int UNSIGNED NOT NULL,
+  `created_at` int UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -140,16 +140,16 @@ CREATE TABLE `jobs` (
 --
 
 CREATE TABLE `job_batches` (
-  `id` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `total_jobs` int(11) NOT NULL,
-  `pending_jobs` int(11) NOT NULL,
-  `failed_jobs` int(11) NOT NULL,
-  `failed_job_ids` longtext NOT NULL,
-  `options` mediumtext DEFAULT NULL,
-  `cancelled_at` int(11) DEFAULT NULL,
-  `created_at` int(11) NOT NULL,
-  `finished_at` int(11) DEFAULT NULL
+  `id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `total_jobs` int NOT NULL,
+  `pending_jobs` int NOT NULL,
+  `failed_jobs` int NOT NULL,
+  `failed_job_ids` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `options` mediumtext COLLATE utf8mb4_unicode_ci,
+  `cancelled_at` int DEFAULT NULL,
+  `created_at` int NOT NULL,
+  `finished_at` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -159,9 +159,9 @@ CREATE TABLE `job_batches` (
 --
 
 CREATE TABLE `migrations` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `migration` varchar(255) NOT NULL,
-  `batch` int(11) NOT NULL
+  `id` int UNSIGNED NOT NULL,
+  `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `batch` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -180,14 +180,14 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 --
 
 CREATE TABLE `pengiriman` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `kd_pengiriman` varchar(50) NOT NULL,
   `nama_kurir` varchar(100) DEFAULT NULL,
-  `alamat_tujuan` text DEFAULT NULL,
+  `alamat_tujuan` text,
   `kd_transaksi` varchar(13) NOT NULL,
   `status_pengiriman` enum('Sampai','Perjalanan','Proses','') NOT NULL,
-  `ongkir` int(20) NOT NULL DEFAULT 9000
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  `ongkir` int NOT NULL DEFAULT '9000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `pengiriman`
@@ -205,25 +205,26 @@ INSERT INTO `pengiriman` (`id`, `kd_pengiriman`, `nama_kurir`, `alamat_tujuan`, 
 --
 
 CREATE TABLE `seller` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `kd_seller` varchar(50) NOT NULL,
   `nama_seller` varchar(20) NOT NULL,
   `email` varchar(100) NOT NULL,
   `username` varchar(50) NOT NULL,
   `pass` varchar(255) NOT NULL,
-  `no_wa` int(11) NOT NULL,
-  `alamat` text DEFAULT NULL,
-  `nik` int(11) DEFAULT NULL,
+  `no_wa` int NOT NULL,
+  `alamat` text,
+  `nik` int DEFAULT NULL,
   `tgl_lahir` date DEFAULT NULL,
-  `foto_profile` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  `foto_profile` text
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `seller`
 --
 
 INSERT INTO `seller` (`id`, `kd_seller`, `nama_seller`, `email`, `username`, `pass`, `no_wa`, `alamat`, `nik`, `tgl_lahir`, `foto_profile`) VALUES
-(7, 'S01020', 'ToBe Store ID', 'tobestore@gmail.com', 'tobe', '123', 62851729, 'Kota Bogor', 183214, '2001-01-01', 'my.jpg');
+(7, 'S01020', 'ToBe Store ID', 'tobestore@gmail.com', 'tobe', '123', 62851729, 'Kota Bogor', 183214, '2001-01-01', 'my.jpg'),
+(9, 'S01673', 'mocha', 'shaamocha3003@gmail.com', 'sellers', '123', 123, 'bogor', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -232,12 +233,12 @@ INSERT INTO `seller` (`id`, `kd_seller`, `nama_seller`, `email`, `username`, `pa
 --
 
 CREATE TABLE `sessions` (
-  `id` varchar(255) NOT NULL,
-  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `payload` longtext NOT NULL,
-  `last_activity` int(11) NOT NULL
+  `id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` text COLLATE utf8mb4_unicode_ci,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_activity` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -245,7 +246,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('NUtSOgdVxGErUKeL1EKJNNC8XXE9BWuXBWz4anMf', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiZDVhSEJFbDdPWVZSaTh4UzJJeDdabzJESGVQOGVBQTVOREVnV0hYOCI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MjY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9jaGF0Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1721009291);
+('PXEnYIEk1Xg3QCqpQ3amNDoJEDfUmKQFAGKql35s', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidHI5SGo2dFVmRFdzSG1GRGUyRTdHM1BPUURXcEY0c2p4dHhSY1E2QiI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzI6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9zdG9rYmFyYW5nIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czoxNToic2VsbGVyX3VzZXJuYW1lIjtzOjc6InNlbGxlcnMiO3M6MTI6InNlbGxlcl90b2tlbiI7Tjt9', 1721043210);
 
 -- --------------------------------------------------------
 
@@ -254,18 +255,18 @@ INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, 
 --
 
 CREATE TABLE `transaksi` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `kd_user` varchar(11) NOT NULL,
   `kd_seller` varchar(50) NOT NULL,
   `kd_transaksi` varchar(13) NOT NULL,
   `kd_barang` varchar(50) NOT NULL,
-  `jumlah_barang` int(11) NOT NULL,
+  `jumlah_barang` int NOT NULL,
   `total_harga` decimal(10,2) NOT NULL,
   `tgl_transaksi` datetime NOT NULL,
   `status_pembayaran` enum('Sukses','Cancel','Pending','') NOT NULL,
   `metode_pembayaran` enum('COD','Alfamart') NOT NULL,
   `batas_pembayaran` date NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `transaksi`
@@ -327,14 +328,14 @@ DELIMITER ;
 --
 
 CREATE TABLE `troli` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `kd_user` varchar(11) NOT NULL,
   `kd_seller` varchar(50) NOT NULL,
   `kd_barang` varchar(50) NOT NULL,
   `gambar_p` varchar(100) NOT NULL,
   `harga_b` float(10,2) NOT NULL,
-  `jumlah_barang` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  `jumlah_barang` int NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `troli`
@@ -350,18 +351,18 @@ INSERT INTO `troli` (`id`, `kd_user`, `kd_seller`, `kd_barang`, `gambar_p`, `har
 --
 
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `kd_user` varchar(11) NOT NULL,
   `nama_users` varchar(50) NOT NULL,
   `email` varchar(100) NOT NULL,
   `username` varchar(50) NOT NULL,
   `pass` varchar(255) NOT NULL,
-  `no_wa` int(11) NOT NULL,
-  `alamat` text DEFAULT NULL,
-  `nik` int(11) DEFAULT NULL,
+  `no_wa` int NOT NULL,
+  `alamat` text,
+  `nik` int DEFAULT NULL,
   `tgl_lahir` date DEFAULT NULL,
-  `foto_profile` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  `foto_profile` text
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `users`
@@ -483,61 +484,61 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `barang`
 --
 ALTER TABLE `barang`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
 
 --
 -- AUTO_INCREMENT for table `chat`
 --
 ALTER TABLE `chat`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `jobs`
 --
 ALTER TABLE `jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `pengiriman`
 --
 ALTER TABLE `pengiriman`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `seller`
 --
 ALTER TABLE `seller`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `transaksi`
 --
 ALTER TABLE `transaksi`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `troli`
 --
 ALTER TABLE `troli`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- Constraints for dumped tables
