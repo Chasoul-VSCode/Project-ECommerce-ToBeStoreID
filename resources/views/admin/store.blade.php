@@ -44,7 +44,7 @@
                   <span class="count bg-success"></span>
                 </div>
                 <div class="profile-name">
-                  <h5 class="mb-0 font-weight-normal">Chasoul vs code</h5>
+                  <h5 class="mb-0 font-weight-normal">ToBe Store ID</h5>
                   <span>Admin</span>
                 </div>
               </div>
@@ -282,7 +282,7 @@
                 <a class="nav-link" id="profileDropdown" href="#" data-bs-toggle="dropdown">
                   <div class="navbar-profile">
                     <img class="img-xs rounded-circle" src="img/tobestore.png" alt="">
-                    <p class="mb-0 d-none d-sm-block navbar-profile-name">Chasoul vs code</p>
+                    <p class="mb-0 d-none d-sm-block navbar-profile-name">ToBe Store ID</p>
                     <i class="mdi mdi-menu-down d-none d-sm-block"></i>
                   </div>
                 </a>
