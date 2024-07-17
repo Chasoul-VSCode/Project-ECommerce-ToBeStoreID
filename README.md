@@ -11,6 +11,7 @@
 
 How To Install??
 - cp .env.example .env
+- Import Sql in api folder - dbs_new_tobe.sql to phpmyadmin
 - composer install
 - php artisan key:generate
 - Copy images in public to api
